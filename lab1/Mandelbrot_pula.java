@@ -23,8 +23,8 @@ public class Mandelbrot_pula {
         }
         return 0x953553;
     }
-
-    public BufferedImage simulation (int pxW, int pxH, double minW, double maxW, double minH, double maxH, int maxIter, ExecutorService ex) {
+    //public BufferedImage simulation (int pxW, int pxH, double minW, double maxW, double minH, double maxH, int maxIter, ExecutorService ex) {
+    public BufferedImage simulation (int pxW, int pxH, double minW, double maxW, double minH, double maxH, int maxIter) {
         BufferedImage bufferedImage = new BufferedImage(pxW, pxH, BufferedImage.TYPE_INT_RGB);
         int part1[] = new int[] {0,0};
         int part2[] = new int[] {0,1};
@@ -32,17 +32,17 @@ public class Mandelbrot_pula {
         int part4[] = new int[] {1,1};
 
         // Pula tworzona za każdym razem
-//        ExecutorService ex = Executors.newFixedThreadPool(4);
+        ExecutorService ex = Executors.newFixedThreadPool(4);
         ex.execute(() -> Mandelbrot_pula.generatePart(pxW, pxH, minW, maxW, minH, maxH, maxIter, part1, bufferedImage));
         ex.execute(() -> Mandelbrot_pula.generatePart(pxW, pxH, minW, maxW, minH, maxH, maxIter, part2, bufferedImage));
         ex.execute(() -> Mandelbrot_pula.generatePart(pxW, pxH, minW, maxW, minH, maxH, maxIter, part3, bufferedImage));
         ex.execute(() -> Mandelbrot_pula.generatePart(pxW, pxH, minW, maxW, minH, maxH, maxIter, part4, bufferedImage));
-//        ex.shutdown();
-//        try {
-//            ex.awaitTermination(1, TimeUnit.DAYS);
-//        } catch (InterruptedException e) {
-//            throw new RuntimeException(e);
-//        }
+        ex.shutdown();
+        try {
+            ex.awaitTermination(1, TimeUnit.DAYS);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         return bufferedImage;
     }
     public static void generatePart(int pxW, int pxH, double minW, double maxW, double minH, double maxH, int maxIter, int[] part, BufferedImage bf) {
@@ -63,28 +63,29 @@ public class Mandelbrot_pula {
             }
         }
     }
-    public void averageTime (int[] N, int[] sizes) {
-        ExecutorService ex = Executors.newFixedThreadPool(4);
+    public void averageTime (int N, int[] sizes) {
         double [] times = new double [sizes.length];
         for (int i=0; i<sizes.length; i++) {
             System.out.println(sizes[i]);
+            //ExecutorService ex = Executors.newFixedThreadPool(4);
             long start = System.nanoTime();
-            for (int j=0; j<N[i]; ++j) {
-                this.simulation(sizes[i],sizes[i],-2.1,0.6,-1.2,1.2,200, ex);
+            for (int j=0; j<N; ++j) {
+                //this.simulation(sizes[i],sizes[i],-2.1,0.6,-1.2,1.2,200, ex);
+                this.simulation(sizes[i],sizes[i],-2.1,0.6,-1.2,1.2,200);
             }
+//            ex.shutdown();
+//            try {
+//                ex.awaitTermination(1, TimeUnit.DAYS);
+//            } catch (InterruptedException e) {
+//                throw new RuntimeException(e);
+//            }
             long end = System.nanoTime();
-            times[i] = (end-start)/1e9/N[i];
-        }
-        ex.shutdown();
-        try {
-            ex.awaitTermination(1, TimeUnit.DAYS);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            times[i] = (end-start)/1e9/N;
         }
 
         BufferedWriter writer;
         try {
-            writer = new BufferedWriter(new FileWriter("pool_times.txt"));
+            writer = new BufferedWriter(new FileWriter("bad_pool_times.txt"));
             for (int i=0; i<sizes.length; i++) {
                 writer.write(sizes[i]*sizes[i]+"\t"+times[i]+"\n");
             }
@@ -96,7 +97,7 @@ public class Mandelbrot_pula {
 
     public static void main(String[] args) {
         int[] sizes = new int[] {32,64,128,256,512,1024,2048,4096,8192};
-        int[] repeats = new int[] {500,500,500,300,200,100,50,20,10}; // różne liczby powtórek monieważ największy obrazek generuje się 80s
+        int repeats = 10; // różne liczby powtórek monieważ największy obrazek generuje się 80s
         int size = 4096;
         Mandelbrot_pula m = new Mandelbrot_pula();
 //        BufferedImage myImage = m.simulation(size,size, -2.1,0.6,-1.2,1.2,200);
